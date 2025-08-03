@@ -1,40 +1,11 @@
 import { faker } from '@faker-js/faker'
 
-Cypress.Commands.add('token', (email, senha) => {
-  return cy.request({
-    method: 'POST',
-    url: 'login',
-    body: {
-      email: email,
-      password: senha
-    }
-  }).then((response) => {
-    expect(response.status).to.equal(200)
-    return response.body.authorization
-  })
-})
-
-Cypress.Commands.add('cadastrarProduto', (token, produto, preco, descricao, quantidade) => {
-  return cy.request({
-    method: 'POST',
-    url: 'produtos',
-    headers: { authorization: token },
-    body: {
-      nome: produto,
-      preco: preco,
-      descricao: descricao,
-      quantidade: quantidade
-    },
-    failOnStatusCode: false
-  })
-})
-
-// Comando que cria usuário, faz login e retorna token e id
-Cypress.Commands.add('criarUsuarioComToken', () => {
+// Cria um usuário com dados dinâmicos
+Cypress.Commands.add('criarUsuario', () => {
   const usuario = {
-    nome: `Usuário Teste ${Date.now()}`,
-    email: `teste${Date.now()}@exemplo.com`,
-    password: 'senha123',
+    nome: faker.person.fullName(),
+    email: faker.internet.email(),
+    password: 'teste123',
     administrador: 'true'
   }
 
@@ -42,22 +13,61 @@ Cypress.Commands.add('criarUsuarioComToken', () => {
     method: 'POST',
     url: 'usuarios',
     body: usuario
-  }).then((response) => {
-    expect(response.status).to.eq(201)
+  })
+})
 
-    return cy.request({
-      method: 'POST',
-      url: 'login',
-      body: {
-        email: usuario.email,
-        password: usuario.password
-      }
-    }).then((res) => {
-      expect(res.status).to.eq(200)
+// Cria usuário + faz login => retorna token + id
+Cypress.Commands.add('criarUsuarioComToken', () => {
+  const usuario = {
+    nome: `Usuário Teste ${Date.now()}`,
+    email: `teste${Date.now()}@qa.com.br`,
+    password: 'senha123',
+    administrador: 'true'
+  }
+
+  return cy.request('POST', 'usuarios', usuario).then((res) => {
+    expect(res.status).to.eq(201)
+
+    return cy.request('POST', 'login', {
+      email: usuario.email,
+      password: usuario.password
+    }).then((loginRes) => {
       return {
-        token: res.body.authorization,
-        id: response.body._id
+        token: loginRes.body.authorization,
+        id: res.body._id
       }
     })
+  })
+})
+
+Cypress.Commands.add('editarUsuario', (token, id) => {
+  return cy.request({
+    method: 'PUT',
+    url: `usuarios/${id}`,
+    headers: { Authorization: token },
+    body: {
+      nome: 'Usuário Editado',
+      email: `editado_${Date.now()}@qa.com.br`,
+      password: 'novaSenha123',
+      administrador: 'false'
+    }
+  })
+})
+
+Cypress.Commands.add('deletarUsuario', (token, id) => {
+  return cy.request({
+    method: 'DELETE',
+    url: `usuarios/${id}`,
+    headers: { Authorization: token }
+  })
+})
+
+Cypress.Commands.add('listarUsuarios', () => {
+  return cy.request('GET', 'usuarios')
+})
+
+Cypress.Commands.add('validarContratoUsuarios', (contrato) => {
+  return cy.request('usuarios').then((res) => {
+    contrato.validateAsync(res.body)
   })
 })

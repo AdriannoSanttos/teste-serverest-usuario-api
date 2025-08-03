@@ -1,33 +1,12 @@
 /// <reference types="cypress" />
-import { faker } from '@faker-js/faker'
 import contrato from '../contracts/usuario.contract'
-
 
 describe('Testes da Funcionalidade Usuários', () => {
 
-  let token
-  let usuarioId
-
-  beforeEach(() => {
-    // Apenas necessário se quiser gerar token globalmente aqui
-    // Se quiser gerar dinamicamente apenas nos testes, pode deixar vazio
-  })
-
   it('Deve cadastrar um usuário com sucesso', () => {
-    const usuario = {
-      nome: faker.person.fullName(),
-      email: faker.internet.email(),
-      password: 'teste123',
-      administrador: 'true'
-    }
-
-    cy.request({
-      method: 'POST',
-      url: 'usuarios',
-      body: usuario
-    }).should((response) => {
-      expect(response.status).equal(201)
-      expect(response.body.message).equal('Cadastro realizado com sucesso')
+    cy.criarUsuario().should((res) => {
+      expect(res.status).to.eq(201)
+      expect(res.body.message).to.eq('Cadastro realizado com sucesso')
     })
   })
 
@@ -38,40 +17,26 @@ describe('Testes da Funcionalidade Usuários', () => {
       failOnStatusCode: false,
       body: {
         nome: 'João Teste',
-        email: 'joaoteste.com.br', // email inválido
+        email: 'joaoteste.com.br',
         password: 'teste123',
         administrador: 'false'
       }
-    }).then((response) => {
-      expect(response.status).to.equal(400)
-      expect(response.body).to.have.property('email')
-      expect(response.body.email).to.eq('email deve ser um email válido')
+    }).then((res) => {
+      expect(res.status).to.eq(400)
+      expect(res.body.email).to.eq('email deve ser um email válido')
     })
   })
 
   it('Deve listar usuários cadastrados', () => {
-    cy.request({
-      method: 'GET',
-      url: 'usuarios'
-    }).then((response) => {
-      expect(response.status).to.equal(200)
-      expect(response.body).to.have.property('usuarios')
+    cy.listarUsuarios().then((res) => {
+      expect(res.status).to.eq(200)
+      expect(res.body).to.have.property('usuarios')
     })
   })
 
   it('Deve editar um usuário previamente cadastrado', () => {
     cy.criarUsuarioComToken().then(({ token, id }) => {
-      cy.request({
-        method: 'PUT',
-        url: `usuarios/${id}`,
-        headers: { Authorization: token },
-        body: {
-          nome: 'Usuário Editado',
-          email: `editado_${Date.now()}@qa.com.br`,
-          password: 'novaSenha123',
-          administrador: 'false'
-        }
-      }).then(res => {
+      cy.editarUsuario(token, id).then((res) => {
         expect(res.status).to.eq(200)
         expect(res.body.message).to.eq('Registro alterado com sucesso')
       })
@@ -80,27 +45,15 @@ describe('Testes da Funcionalidade Usuários', () => {
 
   it('Deve deletar um usuário previamente cadastrado', () => {
     cy.criarUsuarioComToken().then(({ token, id }) => {
-      cy.request({
-        method: 'DELETE',
-        url: `usuarios/${id}`,
-        headers: { Authorization: token }
-      }).then(res => {
+      cy.deletarUsuario(token, id).then((res) => {
         expect(res.status).to.eq(200)
         expect(res.body.message).to.eq('Registro excluído com sucesso')
       })
     })
   })
 
-  // cypress/e2e/usuarios.cy.js
-
-it('Deve validar o contrato de usuários', () => {
-  cy.request('usuarios').then(response =>{
-    return contrato.validateAsync(response.body)
+  it('Deve validar o contrato de usuários', () => {
+    cy.validarContratoUsuarios(contrato)
   })
-  
-})
-
-
 
 })
-
