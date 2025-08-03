@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 import { faker } from '@faker-js/faker'
-const contrato = require('../contracts/usuario.contract')
+import contrato from '../contracts/usuario.contract'
 
 
 describe('Testes da Funcionalidade Usuários', () => {
@@ -93,10 +93,11 @@ describe('Testes da Funcionalidade Usuários', () => {
 
   // cypress/e2e/usuarios.cy.js
 
-it.only('Deve validar o contrato de usuários', () => {
-  cy.request('usuarios').then((response) => {
-    contrato.validateAsync(response.body)
+it('Deve validar o contrato de usuários', () => {
+  cy.request('usuarios').then(response =>{
+    return contrato.validateAsync(response.body)
   })
+  
 })
 
 
